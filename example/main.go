@@ -16,9 +16,9 @@ package main
 
 import (
 	"flag"
+	"github.com/carterpeel/oto/v2"
 	"io"
 	"math"
-	"oto/v2"
 	"runtime"
 	"sync"
 	"time"

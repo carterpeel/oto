@@ -18,6 +18,7 @@
 package oto
 
 import (
+	uatom "go.uber.org/atomic"
 	"io"
 	"runtime"
 	"sync"
@@ -57,18 +58,18 @@ func (ps *players) wait() {
 }
 
 func (ps *players) loop() {
-	var players []*playerImpl
+	var pls []*playerImpl
 	for {
 		ps.wait()
 
 		ps.cond.L.Lock()
-		players = players[:0]
+		pls = pls[:0]
 		for p := range ps.players {
-			players = append(players, p)
+			pls = append(pls, p)
 		}
 		ps.cond.L.Unlock()
 
-		for _, p := range players {
+		for _, p := range pls {
 			p.readSourceToBuffer()
 		}
 	}
@@ -125,6 +126,9 @@ type playerImpl struct {
 	buf     []byte
 	eof     bool
 
+	eofChan chan bool
+	waiting *uatom.Bool
+
 	m sync.Mutex
 }
 
@@ -139,6 +143,8 @@ func newPlayer(context *context, players *players, src io.Reader) *player {
 			players: players,
 			src:     src,
 			volume:  1,
+			eofChan: make(chan bool),
+			waiting: uatom.NewBool(false),
 		},
 	}
 	runtime.SetFinalizer(p, (*player).Close)
@@ -161,12 +167,6 @@ func (p *player) Play(waitDone bool) {
 }
 
 func (p *playerImpl) Play(waitDone bool) {
-	var done chan bool
-	if waitDone {
-		done = make(chan bool)
-		defer close(done)
-	}
-
 	// Goroutines don't work efficiently on Windows. Avoid using them (hajimehoshi/ebiten#1768).
 	if runtime.GOOS == "windows" {
 		p.m.Lock()
@@ -181,15 +181,11 @@ func (p *playerImpl) Play(waitDone bool) {
 
 			close(ch)
 			p.playImpl()
-			if waitDone {
-				done <- true
-			}
 		}()
 		<-ch
-	}
-
-	if waitDone {
-		<-done
+		if waitDone {
+			p.waitEOF()
+		}
 	}
 }
 
@@ -408,10 +404,19 @@ func (p *playerImpl) readSourceToBuffer() {
 	if err == io.EOF && len(p.buf) == 0 {
 		p.state = playerPaused
 		p.eof = true
+		if p.waiting.Load() {
+			p.eofChan <- true
+		}
 	}
 }
 
 func (p *playerImpl) setErrorImpl(err error) {
 	p.err.Store(err)
 	p.closeImpl()
+}
+
+func (p *playerImpl) waitEOF() {
+	p.waiting.Store(true)
+	defer p.waiting.Store(false)
+	<-p.eofChan
 }
