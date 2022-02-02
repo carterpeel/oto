@@ -1,4 +1,4 @@
-module oto/v2
+module github.com/carterpeel/oto/v2
 
 go 1.17
 
