@@ -12,20 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build example
-// +build example
-
 package main
 
 import (
 	"flag"
 	"io"
 	"math"
+	"oto/v2"
 	"runtime"
 	"sync"
 	"time"
-
-	"github.com/hajimehoshi/oto/v2"
 )
 
 var (
@@ -117,7 +113,7 @@ func (s *SineWave) Read(buf []byte) (int, error) {
 
 func play(context *oto.Context, freq float64, duration time.Duration) oto.Player {
 	p := context.NewPlayer(NewSineWave(freq, duration))
-	p.Play()
+	p.Play(true)
 	return p
 }
 

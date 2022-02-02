@@ -156,12 +156,18 @@ func (p *playerImpl) Err() error {
 	return nil
 }
 
-func (p *player) Play() {
-	p.p.Play()
+func (p *player) Play(waitDone bool) {
+	p.p.Play(waitDone)
 }
 
-func (p *playerImpl) Play() {
-	// Goroutines don't work effiently on Windows. Avoid using them (hajimehoshi/ebiten#1768).
+func (p *playerImpl) Play(waitDone bool) {
+	var done chan bool
+	if waitDone {
+		done = make(chan bool)
+		defer close(done)
+	}
+
+	// Goroutines don't work efficiently on Windows. Avoid using them (hajimehoshi/ebiten#1768).
 	if runtime.GOOS == "windows" {
 		p.m.Lock()
 		defer p.m.Unlock()
@@ -175,8 +181,15 @@ func (p *playerImpl) Play() {
 
 			close(ch)
 			p.playImpl()
+			if waitDone {
+				done <- true
+			}
 		}()
 		<-ch
+	}
+
+	if waitDone {
+		<-done
 	}
 }
 

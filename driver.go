@@ -82,7 +82,7 @@ func (c *Context) Err() error {
 // The channelNum argument specifies the number of channels. One channel is mono playback. Two
 // channels are stereo playback. No other values are supported.
 //
-// The bitDepthInBytes argument specifies the number of bytes per sample per channel. The usual value
+// The bitDepthInBytes argument specifies the number of bytes per sample, per channel. The usual value
 // is 2. Only values 1 and 2 are supported.
 func NewContext(sampleRate int, channelNum int, bitDepthInBytes int) (*Context, chan struct{}, error) {
 	ctx, ready, err := newContext(sampleRate, channelNum, bitDepthInBytes)
@@ -98,12 +98,12 @@ type Player interface {
 	Pause()
 
 	// Play starts its playing if it doesn't play.
-	Play()
+	Play(waitDone bool)
 
 	// IsPlaying reports whether this player is playing.
 	IsPlaying() bool
 
-	// Reset clears the underyling buffer and pauses its playing.
+	// Reset clears the underlying buffer and pauses its playing.
 	Reset()
 
 	// Volume returns the current volume in the range of [0, 1].
