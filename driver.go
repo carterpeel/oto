@@ -99,8 +99,10 @@ type Player interface {
 
 	// Play starts its playing if it doesn't play.
 	//
-	// waitEOF should only be true if reading from a source that
-	// returns io.EOF. No other errors are supported.
+	// waitEOF should only be true if reading from a
+	// source io.Reader that returns io.EOF.
+	//
+	// No other errors are supported.
 	Play(waitEOF bool)
 
 	// IsPlaying reports whether this player is playing.
