@@ -162,11 +162,11 @@ func (p *playerImpl) Err() error {
 	return nil
 }
 
-func (p *player) Play(waitDone bool) {
-	p.p.Play(waitDone)
+func (p *player) Play(waitEOF bool) {
+	p.p.Play(waitEOF)
 }
 
-func (p *playerImpl) Play(waitDone bool) {
+func (p *playerImpl) Play(waitEOF bool) {
 	// Goroutines don't work efficiently on Windows. Avoid using them (hajimehoshi/ebiten#1768).
 	if runtime.GOOS == "windows" {
 		p.m.Lock()
@@ -183,7 +183,7 @@ func (p *playerImpl) Play(waitDone bool) {
 			p.playImpl()
 		}()
 		<-ch
-		if waitDone {
+		if waitEOF {
 			p.waitEOF()
 		}
 	}
